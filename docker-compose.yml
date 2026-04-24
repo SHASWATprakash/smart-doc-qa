@@ -3,18 +3,46 @@ version: "3.9"
 services:
   api:
     build: .
+    container_name: smart-doc-api
     ports:
       - "8000:8000"
     depends_on:
       - redis
       - db
+    env_file:
+      - .env
+    volumes:
+      - shared_data:/app/data
+
+  worker:
+    build: .
+    container_name: smart-doc-worker
+    command: celery -A app.tasks.worker.celery worker --loglevel=info
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .env
+    volumes:
+      - shared_data:/app/data
 
   redis:
     image: redis:7
+    container_name: smart-doc-redis
 
   db:
     image: postgres:15
+    container_name: smart-doc-db
     environment:
       POSTGRES_DB: smartqa
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  
+
+volumes:
+  shared_data:
+  postgres_data:
